@@ -31,7 +31,7 @@ with tf.device ("/GPU:0"):
     train_df.loc[train_df["Sex"]=="male","Sex"]=1
     train_df.loc[train_df["Sex"] == "female", "Sex"] = 0
     train_df=train_df.astype({"Sex":float})
-
+    #2
     #print(train_df.columns)
     #(train_df.dtypes)
 
