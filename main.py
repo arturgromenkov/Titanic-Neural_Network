@@ -5,24 +5,28 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tensorflow.keras.models import Model, Sequential
 
+class VisualisationCallback(tf.keras.callbacks.Callback):
 
-def get_dataset_partitions_pd(df, train_split=0.8, val_split=0.1, test_split=0.1):
-    assert (train_split + test_split + val_split) == 1
 
-    # Only allows for equal validation and test splits
-    #assert val_split == test_split
+    def __init__(self):
+        self.train_loss=[]
+        self.val_loss=[]
+        self.epochs=[]
+    def on_epoch_end(self, epoch, logs=None):
+        self.train_loss.append(logs["loss"])
+        self.val_loss.append(logs[""])
 
-    # Specify seed to always have the same split distribution between runs
-    df_sample = df.sample(frac=1, random_state=12)
-    indices_or_sections = [int(train_split * len(df)), int((1 - val_split - test_split) * len(df))]
 
-    train_ds, val_ds, test_ds = np.split(df_sample, indices_or_sections)
 
-    return train_ds, val_ds, test_ds
 
 
 with tf.device ("/GPU:0"):
-    train_df =pd.read_csv(r"D:\System_folders\Dowloads\titanic\train.csv")
+
+    Name="NN1"
+    visualisation=VisualisationCallback()
+
+    #train_df =pd.read_csv(r"D:\System_folders\Dowloads\titanic\train.csv")
+    train_df=pd.read_csv(r"C:\Users\Uzer\Downloads\train.csv")
     #test_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
     #gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
 
@@ -35,15 +39,8 @@ with tf.device ("/GPU:0"):
     #print(train_df.columns)
     #(train_df.dtypes)
 
-    train_ds,val_ds,test_ds=get_dataset_partitions_pd(train_df)
-
-    print(train_ds.head(4))
-
-    # train_x=train_ds.drop("Survived",axis=1).to_numpy()
-    # train_y = train_ds["Survived"].to_numpy()
-    #
-    # val_x = val_ds.drop("Survived", axis=1).to_numpy()
-    # val_y = val_ds["Survived"].to_numpy()
+    train_x=train_df.drop("Survived",axis=1).to_numpy()
+    train_y = train_df["Survived"].to_numpy()
 
     #train_data=train_df.to_numpy()
     #heatmap=sns.heatmap(train_df.corr().abs(),annot=True)
@@ -55,7 +52,9 @@ with tf.device ("/GPU:0"):
     def create_model():
         return tf.keras.models.Sequential([
             tf.keras.layers.Dense(27, activation='relu'),
+            tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(11, activation='relu'),
+            tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(2, activation='relu'),
         ])
     model=create_model()
@@ -68,10 +67,12 @@ with tf.device ("/GPU:0"):
     epochs=30
 
     model.fit(
-        x=train_ds.drop("Survived",axis=1).to_numpy(),
-        y=train_ds["Survived"].to_numpy(),
+        x=train_x,
+        y=train_y,
         epochs=epochs,
-        validation_data=(val_ds.drop("Survived", axis=1).to_numpy(),val_ds["Survived"].to_numpy())
+        validation_split=0.2,
+        batch_size=32,
+        callbacks=[visualisation]
     )
 
 
