@@ -1,32 +1,24 @@
+import shutil
+
 import tensorflow as tf
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tensorflow.keras.models import Model, Sequential
-
-class VisualisationCallback(tf.keras.callbacks.Callback):
-
-
-    def __init__(self):
-        self.train_loss=[]
-        self.val_loss=[]
-        self.epochs=[]
-    def on_epoch_end(self, epoch, logs=None):
-        self.train_loss.append(logs["loss"])
-        self.val_loss.append(logs[""])
-
+from tensorflow.python.keras.callbacks import TensorBoard
+import time
 
 
 
 
 with tf.device ("/GPU:0"):
 
-    Name="NN1"
-    visualisation=VisualisationCallback()
 
-    #train_df =pd.read_csv(r"D:\System_folders\Dowloads\titanic\train.csv")
-    train_df=pd.read_csv(r"C:\Users\Uzer\Downloads\train.csv")
+
+
+    train_df =pd.read_csv(r"D:\System_folders\Dowloads\titanic\train.csv")
+    #train_df=pd.read_csv(r"C:\Users\Uzer\Downloads\train.csv")
     #test_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
     #gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
 
@@ -51,32 +43,36 @@ with tf.device ("/GPU:0"):
 
     def create_model():
         return tf.keras.models.Sequential([
-            tf.keras.layers.Dense(27, activation='relu'),
+            tf.keras.layers.Dense(32, activation='relu'),
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(11, activation='relu'),
+            tf.keras.layers.Dense(8, activation='relu'),
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(2, activation='relu'),
+            tf.keras.layers.Dense(2, activation="sigmoid"),#показала лучший результат
+            #tf.keras.layers.Dense(2, activation='relu'),
         ])
     model=create_model()
 
     model.compile(
-        optimizer="adam",
+        optimizer=tf.keras.optimizers.Adam(),
         loss="binary_crossentropy",
         metrics=["accuracy"]
     )
-    epochs=30
 
+    #shutil.rmtree("logs\\fit")
+    #time.sleep(5)
+    time_stop=int(time.time())
+    tensorboard=TensorBoard(log_dir="logs\\fit\\{}".format(time_stop))
+    #tensorboard = TensorBoard(log_dir="logs\\fit\\NN1", update_freq='epoch')
+    epochs = 240
     model.fit(
         x=train_x,
         y=train_y,
         epochs=epochs,
         validation_split=0.2,
-        batch_size=32,
-        callbacks=[visualisation]
+        #batch_size=32,
+        callbacks=[tensorboard]
     )
-
-
-#    SimpleNet.save("D:/model/oi")
+    model.save("models\\{}".format(time_stop))
 
 
 
