@@ -19,7 +19,7 @@ def Convert_Categorical_to_Numeric(PandasSeries,interpolate=False):
 
 old_model=tf.keras.models.load_model("models\\1664586751")
 test_df = pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
-gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
+#gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
 
 submission_series=test_df["PassengerId"]
 

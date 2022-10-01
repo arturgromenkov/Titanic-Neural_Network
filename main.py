@@ -32,7 +32,7 @@ with tf.device ("/GPU:0"):
 
     train_df =pd.read_csv(r"D:\System_folders\Dowloads\titanic\train.csv")
     #train_df=pd.read_csv(r"C:\Users\Uzer\Downloads\train.csv")
-    #test_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
+    test_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
     #gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
 
     train_df.drop(["Name","PassengerId","Ticket"],axis=1,inplace=True)
@@ -50,10 +50,10 @@ with tf.device ("/GPU:0"):
 
     def create_model():
         return tf.keras.models.Sequential([
+            tf.keras.layers.Dense(100, activation='relu'),
+            tf.keras.layers.Dropout(0.4),
             tf.keras.layers.Dense(50, activation='relu'),
-            tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(25, activation='relu'),
-            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dropout(0.4),
             tf.keras.layers.Dense(1, activation="sigmoid"),#показала лучший результат
         ])
 
@@ -71,7 +71,7 @@ with tf.device ("/GPU:0"):
         metrics=["accuracy"]
     )
 
-    n_split=10
+    n_split=12
     epochs=80
 
     time_stop=int(time.time())
@@ -89,7 +89,35 @@ with tf.device ("/GPU:0"):
             #batch_size=32,
             callbacks=[tensorboard]
         )
-    model.save("models\\{}".format(time_stop))
+
+    #model.save("models\\{}".format(time_stop))
+
+    submission_series = test_df["PassengerId"]
+
+    test_df.drop(["Name", "PassengerId", "Ticket"], axis=1, inplace=True)
+
+    test_df["Cabin"] = Convert_Categorical_to_Numeric(test_df["Cabin"], interpolate=True)
+    test_df["Embarked"] = Convert_Categorical_to_Numeric(test_df["Embarked"], interpolate=True)
+    test_df["Sex"] = Convert_Categorical_to_Numeric(test_df["Sex"])
+    test_df.interpolate(inplace=True)
+
+    predictions = (model.predict(test_df.to_numpy()))
+
+    survived = []
+
+    for i in range(predictions.shape[0]):
+        if (predictions[i] > 0.5):
+            # print("{0} IS GREATER THAN {1}".format(predictions[i],5.0))
+            survived.append(1)
+        else:
+            # print("{0} IS LESS THAN {1}".format(predictions[i], 5.0))
+            survived.append(0)
+
+    submission_table = submission_series.to_frame()
+
+    submission_table.insert(1, "Survived", survived, True)
+
+    submission_table.to_csv("submission_table.csv", index=False)
 
 
 
