@@ -72,7 +72,7 @@ with tf.device ("/GPU:0"):
     )
 
     n_split=10
-    epochs=40
+    epochs=80
 
     time_stop=int(time.time())
     tensorboard=TensorBoard(log_dir="logs\\fit\\{}".format(time_stop))
