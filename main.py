@@ -3,12 +3,25 @@ import shutil
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.python.keras.callbacks import TensorBoard
 import time
+import os
+from sklearn.model_selection import KFold
 
+#tensorboard --logdir="logs/"
+
+def Convert_Categorical_to_Numeric(PandasSeries,interpolate=False):
+
+    if (interpolate):
+        #assert PandasSeries.isnull().values.any()==True,"Given column posses no nan values"
+        PandasSeries.interpolate(inplace=True)
+        PandasSeries.replace(PandasSeries.unique(),[i for i in range(PandasSeries.unique().shape[0])],inplace=True)
+    else:
+        assert PandasSeries.isnull().values.any()==False,"Given column posses some nan values, use INTERPOLATE flag"
+        PandasSeries.replace(PandasSeries.unique(), [i for i in range(PandasSeries.unique().shape[0])], inplace=True)
+
+    return PandasSeries
 
 
 
@@ -22,57 +35,62 @@ with tf.device ("/GPU:0"):
     #test_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\test.csv")
     #gend_sub_df=pd.read_csv(r"D:\System_folders\Dowloads\titanic\gender_submission.csv")
 
-    train_df.drop(["Name","Ticket","Cabin","Embarked","PassengerId","Age","SibSp","Parch"],axis=1,inplace=True)
+    train_df.drop(["Name","PassengerId","Ticket"],axis=1,inplace=True)
 
-    train_df.loc[train_df["Sex"]=="male","Sex"]=1
-    train_df.loc[train_df["Sex"] == "female", "Sex"] = 0
-    train_df=train_df.astype({"Sex":float})
-    #2
-    #print(train_df.columns)
-    #(train_df.dtypes)
+    #print(train_df.head())
+    train_df["Cabin"]=Convert_Categorical_to_Numeric(train_df["Cabin"],interpolate=True)
+    train_df["Embarked"]=Convert_Categorical_to_Numeric(train_df["Embarked"],interpolate=True)
+    train_df["Sex"]=Convert_Categorical_to_Numeric(train_df["Sex"])
+    train_df.interpolate(inplace=True)
 
-    train_x=train_df.drop("Survived",axis=1).to_numpy()
-    train_y = train_df["Survived"].to_numpy()
+    #print(train_df.isnull().sum())
 
-    #train_data=train_df.to_numpy()
-    #heatmap=sns.heatmap(train_df.corr().abs(),annot=True)
-    #plt.show()
-
-    #print(train_x.shape)
-    #print(train_y.shape)
+    X=train_df.drop("Survived",axis=1).to_numpy()
+    Y=train_df["Survived"].to_numpy()
 
     def create_model():
         return tf.keras.models.Sequential([
-            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(50, activation='relu'),
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(8, activation='relu'),
+            tf.keras.layers.Dense(25, activation='relu'),
             tf.keras.layers.Dropout(0.2),
-            tf.keras.layers.Dense(2, activation="sigmoid"),#показала лучший результат
-            #tf.keras.layers.Dense(2, activation='relu'),
+            tf.keras.layers.Dense(1, activation="sigmoid"),#показала лучший результат
         ])
+
+
+    shutil.rmtree("logs\\fit")
+    shutil.rmtree("models\\")
+    os.mkdir("models")
+    os.mkdir("logs\\fit")
+
     model=create_model()
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),#normal rate =0.001
         loss="binary_crossentropy",
         metrics=["accuracy"]
     )
 
-    #shutil.rmtree("logs\\fit")
-    #time.sleep(5)
+    n_split=10
+    epochs=40
+
     time_stop=int(time.time())
     tensorboard=TensorBoard(log_dir="logs\\fit\\{}".format(time_stop))
-    #tensorboard = TensorBoard(log_dir="logs\\fit\\NN1", update_freq='epoch')
-    epochs = 240
-    model.fit(
-        x=train_x,
-        y=train_y,
-        epochs=epochs,
-        validation_split=0.2,
-        #batch_size=32,
-        callbacks=[tensorboard]
-    )
+    for train_index,valid_index in KFold(n_split).split(X):
+
+        x_train,x_valid=X[train_index],X[valid_index]
+        y_train,y_valid=Y[train_index],Y[valid_index]
+
+        model.fit(
+            x=x_train,
+            y=y_train,
+            epochs=epochs,
+            validation_data=[x_valid,y_valid],
+            #batch_size=32,
+            callbacks=[tensorboard]
+        )
     model.save("models\\{}".format(time_stop))
+
 
 
 
