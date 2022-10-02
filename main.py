@@ -50,10 +50,10 @@ with tf.device ("/GPU:0"):
 
     def create_model():
         return tf.keras.models.Sequential([
-            tf.keras.layers.Dense(100, activation='relu'),
-            tf.keras.layers.Dropout(0.4),
             tf.keras.layers.Dense(50, activation='relu'),
-            tf.keras.layers.Dropout(0.4),
+            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dense(25, activation='relu'),
+            tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(1, activation="sigmoid"),#показала лучший результат
         ])
 
@@ -71,8 +71,8 @@ with tf.device ("/GPU:0"):
         metrics=["accuracy"]
     )
 
-    n_split=12
-    epochs=80
+    n_split=10
+    epochs=40
 
     time_stop=int(time.time())
     tensorboard=TensorBoard(log_dir="logs\\fit\\{}".format(time_stop))
